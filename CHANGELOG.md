@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.2.5] - 2026-05-07
+
+### Fixed
+- Restore `apiKey` and `baseUrl` fields on the `llm` adapter Configuration form
+  (closes #4). The 0.2.0 rebrand dropped both fields from the form schema; the
+  server-side adapter still read `config.apiKey` and `config.baseUrl` but the
+  saved `adapterConfig` only contained `{ "model": "..." }`, so the spawned CLI
+  exited with `LLM_API_KEY (or OPENROUTER_API_KEY) is required for non-localhost
+  endpoints` on every Run Heartbeat.
+  - `apiKey` is declared in `paperclip.plugin.json#configSchema.properties` as
+    a password-format string and surfaced in `src/ui/build-config.ts` as a
+    masked input. Persists to `adapterConfig.apiKey`.
+  - `baseUrl` is a plain text input with placeholder
+    `https://integrate.api.nvidia.com/v1`. Persists to `adapterConfig.baseUrl`.
+
+### Notes
+- No CLI changes. `cli/dist/index.js` already consumes `LLM_API_KEY` from env
+  and `--base-url` from argv; that path is verified working.
+- Prior fixes from 0.2.0 → 0.2.4 remain in place.
+
 ## [0.2.4] - 2026-05-07
 
 ### Fixed

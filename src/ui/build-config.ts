@@ -93,22 +93,22 @@ export function buildConfig(
  */
 export const configFields = [
   {
+    key: "apiKey",
+    label: "API key",
+    type: "password" as const,
+    placeholder: "nvapi-... / sk-or-v1-... / sk-...",
+    required: false,
+    helpText:
+      "NIM keys start with `nvapi-`. OpenRouter keys with `sk-or-`. Leave empty for localhost endpoints (Ollama, vLLM unauthenticated).",
+  },
+  {
     key: "baseUrl",
     label: "Base URL",
     type: "text" as const,
-    placeholder: "https://openrouter.ai/api/v1",
+    placeholder: "https://integrate.api.nvidia.com/v1",
     required: false,
     helpText:
-      "OpenAI-compatible endpoint. Leave empty for OpenRouter. Examples: NVIDIA NIM (https://integrate.api.nvidia.com/v1), Ollama (http://localhost:11434/v1).",
-  },
-  {
-    key: "apiKey",
-    label: "API Key",
-    type: "password" as const,
-    placeholder: "sk-or-v1-... / nvapi-... / sk-...",
-    required: false,
-    helpText:
-      "Provider API key. OpenRouter: https://openrouter.ai/keys. NVIDIA NIM: nvapi-... key. Ollama/vLLM localhost: leave empty.",
+      "Optional override for the OpenAI-compatible endpoint. Leave empty for OpenRouter default.",
   },
   {
     key: "model",

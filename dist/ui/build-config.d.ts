@@ -27,7 +27,7 @@ export declare function buildConfig(formValues: LlmFormValues): Record<string, u
 export declare const configFields: ({
     key: string;
     label: string;
-    type: "text";
+    type: "password";
     placeholder: string;
     required: boolean;
     helpText: string;
@@ -40,7 +40,7 @@ export declare const configFields: ({
 } | {
     key: string;
     label: string;
-    type: "password";
+    type: "text";
     placeholder: string;
     required: boolean;
     helpText: string;

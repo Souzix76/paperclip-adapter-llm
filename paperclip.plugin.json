@@ -4,17 +4,24 @@
   "id": "llm",
   "name": "LLM Adapter (OpenAI-compatible)",
   "description": "Generic OpenAI-compatible adapter — works with OpenRouter, NVIDIA NIM, Ollama, vLLM, DeepSeek, and any OpenAI-compatible endpoint",
-  "version": "0.1.0",
+  "version": "0.2.5",
   "entry": {
     "adapter": "./src/index.ts"
   },
   "configSchema": {
     "type": "object",
     "properties": {
+      "apiKey": {
+        "type": "string",
+        "format": "password",
+        "description": "Provider API key. NIM keys start with `nvapi-`. OpenRouter keys with `sk-or-`. Leave empty for localhost endpoints (Ollama, vLLM unauthenticated).",
+        "default": ""
+      },
       "baseUrl": {
         "type": "string",
-        "description": "OpenAI-compatible base URL. Leave empty for OpenRouter (default).",
-        "default": ""
+        "description": "Optional override for the OpenAI-compatible endpoint. Leave empty for OpenRouter default.",
+        "default": "",
+        "examples": ["https://integrate.api.nvidia.com/v1"]
       },
       "model": {
         "type": "string",
