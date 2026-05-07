@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.6] - 2026-05-07
+
+### Fixed
+- Server-side `execute.ts` was not reading `adapterConfig.apiKey` when
+  spawning the CLI subprocess. It only forwarded `authToken` (the legacy
+  OpenRouter platform-key path) into `LLM_API_KEY` / `OPENROUTER_API_KEY`,
+  so even after 0.2.5 added the field to `paperclip.plugin.json` and the
+  form schema, agents whose key arrives via the form (or via direct API
+  `PATCH adapterConfig.apiKey`) still got `""` and the CLI exited with
+  `LLM_API_KEY (or OPENROUTER_API_KEY) is required for non-localhost
+  endpoints`. Now `LLM_API_KEY = config.apiKey || authToken || ""`,
+  preferring the per-agent persisted key. Empirically reproduced and
+  verified end-to-end against NVIDIA NIM (`integrate.api.nvidia.com/v1`,
+  `moonshotai/kimi-k2.6`) — Run Heartbeat returned `succeeded` with a
+  streamed assistant response and a tool call.
+
 ## [0.2.5] - 2026-05-07
 
 ### Fixed

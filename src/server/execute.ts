@@ -183,12 +183,19 @@ export async function execute(
     "--base-url", endpoints.base,
   ];
 
+  // Prefer `adapterConfig.apiKey` (persisted via the form / API), then fall
+  // back to `authToken` (legacy path: Paperclip core injects an OpenRouter
+  // token here for adapters that share the platform-wide key).
+  const llmApiKey = (typeof config.apiKey === "string" && config.apiKey.length > 0)
+    ? config.apiKey
+    : (authToken ?? "");
+
   const env: NodeJS.ProcessEnv = {
     ...process.env,
-    LLM_API_KEY: authToken ?? "",
+    LLM_API_KEY: llmApiKey,
     LLM_BASE_URL: endpoints.base,
     // Backwards-compat alias for existing OpenRouter installs.
-    OPENROUTER_API_KEY: authToken ?? "",
+    OPENROUTER_API_KEY: llmApiKey,
   };
 
   const cwd = typeof config.cwd === "string" && config.cwd.length > 0 ? config.cwd : process.cwd();
