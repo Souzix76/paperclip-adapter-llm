@@ -1,5 +1,42 @@
 # Changelog
 
+## [0.2.3] - 2026-05-07
+
+### Fixed
+- CLI: chat completions against NIM/vLLM/Ollama/DeepSeek-direct exited 0 with
+  an empty transcript even though the upstream API returned a valid response.
+  `@openrouter/ai-sdk-provider`'s Zod schema requires
+  `delta.role === 'assistant'` on every continuation chunk; non-OpenRouter
+  providers send `delta.role: null` on continuations (which is valid per the
+  OpenAI streaming spec — `role` is required only on the first delta). Each
+  continuation became an `AI_TypeValidationError` that the previous
+  `streamResponse` swallowed silently. Closes #3.
+- `streamResponse` now re-throws on `part.type === 'error'` instead of
+  dropping it, so future schema-mismatch surprises surface immediately
+  instead of disappearing into a zero-event run.
+
+### Changed
+- `cli/src/openrouter.ts` selects the underlying ai-sdk provider based on
+  `LLM_BASE_URL` host: `*.openrouter.ai` (or unset) → `createOpenRouter`;
+  any other host → `createOpenAICompatible` from
+  `@ai-sdk/openai-compatible`, which does not enforce OpenRouter-specific
+  framing.
+
+### Added
+- `@ai-sdk/openai-compatible@^0.2.16` as a CLI dependency. (Note: the
+  `^2.0.46` line referenced in the issue requires `ai@5` and
+  `@ai-sdk/provider@3`; the CLI ships `ai@4.3.19` / `@ai-sdk/provider@1.1.3`.
+  The `0.2.16` line is the latest version of `@ai-sdk/openai-compatible`
+  that targets `@ai-sdk/provider@1.1.3`, so it slots into the existing
+  ecosystem with zero breaking changes. Upgrading to `2.x` would require a
+  full `ai@5` migration, which is out of scope for a streaming-shape fix.)
+- `tests/cli-streaming-non-openrouter.test.ts` — boots a local
+  `http.createServer` that emits the OpenAI SSE chat-completions dialect
+  with `delta.role: null` on continuations (the exact NIM wire shape from
+  the issue). Asserts `streamResponse` yields at least one text chunk with
+  the expected content and surfaces upstream error frames as thrown
+  exceptions instead of swallowing them.
+
 ## [0.2.2] - 2026-05-07
 
 ### Fixed
