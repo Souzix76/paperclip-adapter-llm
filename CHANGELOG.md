@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.2.4] - 2026-05-07
+
+### Fixed
+- Adapter: heartbeats with no structured wake payload (manual "Run Heartbeat"
+  with no scoped issue, or a wake context the current Paperclip schema does
+  not fill in) sent an empty prompt to the CLI. The CLI then exited 1 with
+  `Error: No prompt provided`, the run failed, and the transcript was empty.
+  Reproduced on Paperclip v2026.428.0 with run ids
+  `2e76cead-a080-4f63-8469-afe377418b9d` and
+  `4eaf1afd-bd84-4da6-8380-d7024cd5fd60`.
+- `src/server/execute.ts` now substitutes a concise three-line fallback
+  prompt when the rendered prompt is empty so the model always has
+  something to act on. The CLI's "No prompt provided" guard is unchanged
+  — the fix is on the adapter side. Tools/skills are still added
+  separately when present; the fallback itself contains no tool list or
+  skill instructions.
+
+### Added
+- `tests/execute.test.ts` regression spec: stub CLI now optionally captures
+  its stdin to a temp file; new spec asserts that a heartbeat with empty
+  `ctx.context` produces a non-empty prompt of exactly 3 non-empty lines
+  containing the word "heartbeat".
+
 ## [0.2.3] - 2026-05-07
 
 ### Fixed

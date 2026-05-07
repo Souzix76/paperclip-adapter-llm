@@ -32,16 +32,29 @@ import { execute } from "../src/server/execute.js";
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "llm-adapter-test-"));
 
-function writeStubCli(name: string, opts: { stdoutLines?: string[]; exitCode?: number }): string {
+function writeStubCli(
+  name: string,
+  opts: { stdoutLines?: string[]; exitCode?: number; capturePromptTo?: string },
+): string {
   const filePath = path.join(tmpDir, `${name}.mjs`);
   const lines = JSON.stringify(opts.stdoutLines ?? []);
   const exitCode = opts.exitCode ?? 0;
+  const capturePromptTo = opts.capturePromptTo ?? "";
   const source = `#!/usr/bin/env node
+import fs from "node:fs";
 const lines = ${lines};
-for (const line of lines) {
-  process.stdout.write(line + "\\n");
-}
-process.exit(${exitCode});
+const capturePromptTo = ${JSON.stringify(capturePromptTo)};
+let prompt = "";
+process.stdin.on("data", (chunk) => { prompt += chunk.toString(); });
+process.stdin.on("end", () => {
+  if (capturePromptTo) {
+    try { fs.writeFileSync(capturePromptTo, prompt); } catch {}
+  }
+  for (const line of lines) {
+    process.stdout.write(line + "\\n");
+  }
+  process.exit(${exitCode});
+});
 `;
   fs.writeFileSync(filePath, source, { mode: 0o755 });
   return filePath;
@@ -231,5 +244,29 @@ describe("execute()", () => {
 
     expect(result.exitCode).toBe(0);
     expect(result.provider).toBe("llm");
+  });
+
+  it("falls back to a concise default prompt when the wake context is empty", async () => {
+    // Regression for the 0.2.4 fix: a heartbeat with no structured wake
+    // payload (manual "Run Heartbeat" with no scoped issue, or a wake
+    // schema the current server doesn't fill in) used to send empty
+    // stdin to the CLI, which exited 1 with "No prompt provided" and
+    // produced an empty transcript.
+    const captureFile = path.join(tmpDir, "captured-prompt.txt");
+    process.env.PAPERCLIP_LLM_CLI_PATH = writeStubCli("capture-empty", {
+      stdoutLines: ['{"type":"done"}'],
+      exitCode: 0,
+      capturePromptTo: captureFile,
+    });
+
+    const ctx = makeContext({ context: {} });
+    const result = await execute(ctx);
+
+    expect(result.exitCode).toBe(0);
+    const captured = fs.readFileSync(captureFile, "utf8");
+    expect(captured.trim().length).toBeGreaterThan(0);
+    // 3-line fallback per the issue suggestion.
+    expect(captured.split("\n").filter((l) => l.trim().length > 0).length).toBe(3);
+    expect(captured).toContain("heartbeat");
   });
 });

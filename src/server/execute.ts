@@ -132,6 +132,22 @@ export async function execute(
     const renderedSkills = renderSkillsForPrompt(skills);
     const wakePrompt = renderPaperclipWakePrompt(wake);
     prompt = renderedSkills ? `${renderedSkills}\n\n---\n\n${wakePrompt}` : wakePrompt;
+
+    // Some heartbeats arrive without a structured wake payload (manual
+    // "Run Heartbeat" with no scoped issue, or a wake context the current
+    // server schema doesn't fill in). renderPaperclipWakePrompt returns
+    // an empty string in those cases, which the CLI rejects with
+    // "No prompt provided" → exit 1 → empty transcript. Fall back to a
+    // concise three-line instruction so the model has something to work
+    // with. Tools/skills are added separately above when present.
+    if (prompt.trim().length === 0) {
+      const issueLine = issueId ? ` (issue ${issueId})` : "";
+      prompt = [
+        `You have just received a heartbeat from Paperclip${issueLine}.`,
+        "No structured wake context was provided — proceed using the tools available to you.",
+        "Take the next useful action toward your current responsibilities, then end the run.",
+      ].join("\n");
+    }
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
     await emitSystem(onLog, `Error building prompt: ${reason}`);
