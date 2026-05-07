@@ -26,6 +26,7 @@ import type {
 
 import { execute } from "./execute.js";
 import { testEnvironment, listModels, listOpenRouterModels } from "./test.js";
+import { type, label, models, agentConfigurationDoc } from "../index.js";
 
 export { execute, testEnvironment, listModels, listOpenRouterModels };
 
@@ -157,6 +158,10 @@ export async function syncSkills(
  */
 export function createServerAdapter() {
   return {
+    type,
+    label,
+    models,
+    agentConfigurationDoc,
     execute,
     testEnvironment,
     sessionCodec,

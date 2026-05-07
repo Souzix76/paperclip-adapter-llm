@@ -1,3 +1,4 @@
+import { type, label, models, agentConfigurationDoc } from "../index.js";
 /**
  * Server barrel for the OpenRouter adapter.
  *
@@ -138,6 +139,10 @@ export async function syncSkills(ctx, _desiredSkills) {
  */
 export function createServerAdapter() {
     return {
+        type,
+        label,
+        models,
+        agentConfigurationDoc,
         execute,
         testEnvironment,
         sessionCodec,
