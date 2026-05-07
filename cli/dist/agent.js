@@ -14,7 +14,7 @@ export async function runAgent(options) {
     while (iteration < MAX_ITERATIONS) {
         iteration++;
         let fullText = '';
-        let toolCalls = [];
+        const collectedToolCalls = [];
         for await (const chunk of streamResponse({ apiKey: options.apiKey, model: options.model, maxTokens: options.maxTokens, baseUrl: options.baseUrl }, messages, toolDefinitions)) {
             if (chunk.type === 'text' && chunk.content) {
                 fullText += chunk.content;
@@ -25,23 +25,43 @@ export async function runAgent(options) {
                     process.stdout.write(chunk.content);
                 }
             }
-            else if (chunk.type === 'response' && chunk.response) {
-                const assistantMessage = chunk.response.messages[0];
-                messages.push(assistantMessage);
-                // Filter tool-call parts from content array
-                const content = assistantMessage.content;
-                if (Array.isArray(content)) {
-                    toolCalls = content.filter((part) => part.type === 'tool-call');
-                }
+            else if (chunk.type === 'tool-call') {
+                collectedToolCalls.push({
+                    toolCallId: chunk.toolCallId,
+                    toolName: chunk.toolName,
+                    args: chunk.args,
+                });
             }
+            // chunk.type === 'response' is intentionally ignored for assistant message
+            // reconstruction — many OpenAI-compatible providers (NIM, vLLM, Ollama,
+            // DeepSeek direct) do not populate response.messages, which crashed the
+            // CLI in <0.2.2.
         }
-        if (toolCalls.length === 0) {
+        // Reconstruct the assistant message from the data we observed in-stream.
+        // This is the canonical shape the ai SDK expects in subsequent turns.
+        const content = [];
+        if (fullText.length > 0) {
+            content.push({ type: 'text', text: fullText });
+        }
+        for (const tc of collectedToolCalls) {
+            content.push({
+                type: 'tool-call',
+                toolCallId: tc.toolCallId,
+                toolName: tc.toolName,
+                args: tc.args,
+            });
+        }
+        const assistantMessage = content.length === 1 && content[0].type === 'text'
+            ? { role: 'assistant', content: fullText }
+            : { role: 'assistant', content: content };
+        messages.push(assistantMessage);
+        if (collectedToolCalls.length === 0) {
             if (options.outputFormat === 'stream-json') {
                 emitEvent({ type: 'done' });
             }
             break;
         }
-        const toolResults = await Promise.all(toolCalls.map(async (toolCall) => {
+        const toolResults = await Promise.all(collectedToolCalls.map(async (toolCall) => {
             const start = Date.now();
             try {
                 if (options.outputFormat === 'stream-json') {

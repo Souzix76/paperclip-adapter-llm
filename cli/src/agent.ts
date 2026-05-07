@@ -13,6 +13,12 @@ export interface AgentOptions {
   baseUrl?: string;
 }
 
+interface CollectedToolCall {
+  toolCallId: string;
+  toolName: string;
+  args: unknown;
+}
+
 export async function runAgent(options: AgentOptions) {
   const messages: CoreMessage[] = [
     { role: 'user', content: options.prompt }
@@ -32,7 +38,7 @@ export async function runAgent(options: AgentOptions) {
     iteration++;
 
     let fullText = '';
-    let toolCalls: ToolCallPart[] = [];
+    const collectedToolCalls: CollectedToolCall[] = [];
 
     for await (const chunk of streamResponse(
       { apiKey: options.apiKey, model: options.model, maxTokens: options.maxTokens, baseUrl: options.baseUrl },
@@ -46,21 +52,42 @@ export async function runAgent(options: AgentOptions) {
         } else {
           process.stdout.write(chunk.content);
         }
-      } else if (chunk.type === 'response' && chunk.response) {
-        const assistantMessage = chunk.response.messages[0];
-        messages.push(assistantMessage);
-        
-        // Filter tool-call parts from content array
-        const content = assistantMessage.content;
-        if (Array.isArray(content)) {
-          toolCalls = content.filter(
-            (part): part is ToolCallPart => part.type === 'tool-call'
-          );
-        }
+      } else if (chunk.type === 'tool-call') {
+        collectedToolCalls.push({
+          toolCallId: chunk.toolCallId,
+          toolName: chunk.toolName,
+          args: chunk.args,
+        });
       }
+      // chunk.type === 'response' is intentionally ignored for assistant message
+      // reconstruction — many OpenAI-compatible providers (NIM, vLLM, Ollama,
+      // DeepSeek direct) do not populate response.messages, which crashed the
+      // CLI in <0.2.2.
     }
 
-    if (toolCalls.length === 0) {
+    // Reconstruct the assistant message from the data we observed in-stream.
+    // This is the canonical shape the ai SDK expects in subsequent turns.
+    const content: Array<{ type: 'text'; text: string } | ToolCallPart> = [];
+    if (fullText.length > 0) {
+      content.push({ type: 'text', text: fullText });
+    }
+    for (const tc of collectedToolCalls) {
+      content.push({
+        type: 'tool-call',
+        toolCallId: tc.toolCallId,
+        toolName: tc.toolName,
+        args: tc.args as any,
+      } as ToolCallPart);
+    }
+
+    const assistantMessage: CoreMessage =
+      content.length === 1 && content[0].type === 'text'
+        ? { role: 'assistant', content: fullText }
+        : { role: 'assistant', content: content as any };
+
+    messages.push(assistantMessage);
+
+    if (collectedToolCalls.length === 0) {
       if (options.outputFormat === 'stream-json') {
         emitEvent({ type: 'done' });
       }
@@ -68,7 +95,7 @@ export async function runAgent(options: AgentOptions) {
     }
 
     const toolResults: ToolResultPart[] = await Promise.all(
-      toolCalls.map(async (toolCall) => {
+      collectedToolCalls.map(async (toolCall) => {
         const start = Date.now();
         try {
           if (options.outputFormat === 'stream-json') {
@@ -80,7 +107,7 @@ export async function runAgent(options: AgentOptions) {
             });
           }
 
-          const result = await executeTool(toolCall.toolName, toolCall.args);
+          const result = await executeTool(toolCall.toolName, toolCall.args as Record<string, unknown>);
 
           if (options.outputFormat === 'stream-json') {
             emitEvent({

@@ -18,11 +18,11 @@ export declare const writeFileSchema: z.ZodObject<{
     path: z.ZodString;
     content: z.ZodString;
 }, "strip", z.ZodTypeAny, {
-    path: string;
     content: string;
+    path: string;
 }, {
-    path: string;
     content: string;
+    path: string;
 }>;
 export declare function writeFile(args: z.infer<typeof writeFileSchema>): Promise<ToolResult>;
 export declare const editFileSchema: z.ZodObject<{

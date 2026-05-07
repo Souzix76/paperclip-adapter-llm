@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.2.2] - 2026-05-07
+
+### Fixed
+- CLI: chat completions against non-OpenRouter providers (NVIDIA NIM, vLLM,
+  Ollama, DeepSeek direct) crashed at `cli/dist/agent.js:32` with
+  `TypeError: Cannot read properties of undefined (reading 'content')` because
+  the `ai` SDK's `response.messages[0]` is only populated when the request
+  goes through OpenRouter's framing. The CLI now reads tool calls and text
+  from `result.fullStream` and reconstructs the assistant message from those
+  chunks, so it no longer touches `response.messages`. Reported in #2.
+- `cli/src/openrouter.ts` switched from `result.textStream` to
+  `result.fullStream` and now yields `tool-call` chunks during the stream.
+
+### Added
+- `tests/cli-agent.test.ts` — regression specs that mock `streamResponse` to
+  return text deltas with no `messages[0]` (NIM/vLLM shape) and assert
+  `runAgent` does not throw and emits `assistant` + `done` events.
+- `tests/entry-point.test.ts` — smoke specs that import `dist/index.js`
+  and assert `createServerAdapter()` exists, returns the
+  `ServerAdapterModule` shape (`type` / `label` / `models` /
+  `agentConfigurationDoc` / `execute` / `testEnvironment`), and that
+  `resolveEndpoints()` is exported. Guards against future entry-point
+  refactors silently regressing 0.2.1's fix.
+
 ## [0.2.1] - 2026-05-07
 
 ### Fixed
