@@ -1,7 +1,7 @@
 {
   "name": "paperclip-adapter-llm",
-  "version": "0.1.0",
-  "description": "Generic OpenAI-compatible adapter for Paperclip \u2014 works with OpenRouter, NVIDIA NIM, Ollama, vLLM, and any OpenAI-compatible endpoint",
+  "version": "0.2.0",
+  "description": "Generic OpenAI-compatible adapter for Paperclip — works with OpenRouter, NVIDIA NIM, Ollama, vLLM, and any OpenAI-compatible endpoint",
   "license": "MIT",
   "type": "module",
   "exports": {
@@ -12,7 +12,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@paperclipai/adapter-utils": "2026.428.0",
@@ -21,7 +22,8 @@
   "devDependencies": {
     "@types/node": "^25.5.2",
     "picocolors": "^1.1.1",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "vitest": "^3.2.4"
   },
   "peerDependencies": {
     "picocolors": "^1.1.1"

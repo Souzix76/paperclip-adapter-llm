@@ -1,5 +1,5 @@
 /**
- * Skill loading for the OpenRouter adapter.
+ * Skill loading for the LLM adapter.
  *
  * Reads SKILL.md files from a skills directory and returns their contents
  * for injection into the system prompt.
@@ -7,7 +7,7 @@
  * Discovery order for the skills root:
  *   1. agentConfig.skillsDir (per-agent override)
  *   2. PAPERCLIP_SKILLS_DIR env var (server-wide override)
- *   3. ~/.openrouter-adapter/skills (default managed root)
+ *   3. ~/.paperclip-llm-adapter/skills (default managed root)
  *
  * v1 design: scan the root, load every subdirectory that contains a SKILL.md,
  * inject all of them. We do NOT yet integrate with Paperclip's "desired skills"
@@ -35,13 +35,22 @@ export interface LoadSkillsParams {
   onLog: OnLog;
 }
 
-function resolveSkillsRoot(agentConfig: Record<string, unknown>): string {
-  const fromConfig = typeof agentConfig.skillsDir === "string" ? agentConfig.skillsDir.trim() : "";
+/** Default skills root used when neither config.skillsDir nor PAPERCLIP_SKILLS_DIR is set. */
+export function defaultSkillsDir(): string {
+  const home = process.env.HOME || process.env.USERPROFILE || ".";
+  return path.join(home, ".paperclip-llm-adapter", "skills");
+}
+
+/** @deprecated Prefer defaultSkillsDir() — value is process-dependent. */
+export const DEFAULT_SKILLS_DIR = defaultSkillsDir();
+
+function resolveSkillsRoot(agentConfig: Record<string, unknown> | undefined | null): string {
+  const cfg = agentConfig ?? {};
+  const fromConfig = typeof cfg.skillsDir === "string" ? cfg.skillsDir.trim() : "";
   if (fromConfig) return fromConfig;
   const fromEnv = process.env.PAPERCLIP_SKILLS_DIR;
   if (fromEnv && fromEnv.trim()) return fromEnv.trim();
-  const home = process.env.HOME || process.env.USERPROFILE || ".";
-  return path.join(home, ".openrouter-adapter", "skills");
+  return defaultSkillsDir();
 }
 
 async function pathExists(p: string): Promise<boolean> {
@@ -54,7 +63,7 @@ async function pathExists(p: string): Promise<boolean> {
 }
 
 export async function loadSkills(params: LoadSkillsParams): Promise<LoadedSkill[]> {
-  const { agentConfig, onLog } = params;
+  const { agentConfig, onLog } = params ?? ({} as LoadSkillsParams);
   const root = resolveSkillsRoot(agentConfig);
 
   if (!(await pathExists(root))) {
@@ -67,7 +76,7 @@ export async function loadSkills(params: LoadSkillsParams): Promise<LoadedSkill[
     entries = await fs.readdir(root, { withFileTypes: true });
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
-    await writeRawStderr(onLog, `[openrouter] could not read skills root ${root}: ${reason}`);
+    await writeRawStderr(onLog, `[llm-adapter] could not read skills root ${root}: ${reason}`);
     return [];
   }
 
@@ -82,7 +91,7 @@ export async function loadSkills(params: LoadSkillsParams): Promise<LoadedSkill[
       loaded.push({ name: skillName, path: skillMdPath, content });
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
-      await writeRawStderr(onLog, `[openrouter] failed to read skill "${skillName}": ${reason}`);
+      await writeRawStderr(onLog, `[llm-adapter] failed to read skill "${skillName}": ${reason}`);
     }
   }
 

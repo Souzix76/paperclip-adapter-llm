@@ -42,6 +42,13 @@ export declare function syncSkills(ctx: AdapterSkillContext, _desiredSkills: str
  * surface as a single object.
  */
 export declare function createServerAdapter(): {
+    type: "llm";
+    label: string;
+    models: {
+        id: string;
+        label: string;
+    }[];
+    agentConfigurationDoc: string;
     execute: typeof execute;
     testEnvironment: typeof testEnvironment;
     sessionCodec: AdapterSessionCodec;

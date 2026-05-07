@@ -1,4 +1,3 @@
-import { type, label, models, agentConfigurationDoc } from "../index.js";
 /**
  * Server barrel for the OpenRouter adapter.
  *
@@ -20,6 +19,7 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { execute } from "./execute.js";
 import { testEnvironment, listModels, listOpenRouterModels } from "./test.js";
+import { type, label, models, agentConfigurationDoc } from "../index.js";
 export { execute, testEnvironment, listModels, listOpenRouterModels };
 // ----- sessionCodec -----
 /**

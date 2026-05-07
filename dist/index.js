@@ -148,4 +148,3 @@ Use the \`provider/model-name\` format and an \`nvapi-...\` key.
   upload, vision-only providers, etc.). Use a provider-specific adapter.
 `;
 //# sourceMappingURL=index.js.map
-export { createServerAdapter } from "./server/index.js";
