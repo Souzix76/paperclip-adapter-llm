@@ -1,9 +1,10 @@
 // ─────────────────────────────────────────────────────────────────
-// @paperclipai/adapter-openrouter — UI Build Config
+// paperclip-adapter-llm — UI Build Config
 // Converts onboarding/settings form values → adapterConfig JSON
 // ─────────────────────────────────────────────────────────────────
 
-export interface OpenRouterFormValues {
+export interface LlmFormValues {
+  baseUrl?: string;
   model?: string;
   apiKey?: string;
   systemPrompt?: string;
@@ -18,14 +19,23 @@ export interface OpenRouterFormValues {
   xTitle?: string;
 }
 
+/** @deprecated Use LlmFormValues. */
+export type OpenRouterFormValues = LlmFormValues;
+
 /**
  * Convert UI form values into the adapterConfig object
  * stored in the Paperclip database for this agent.
  */
 export function buildConfig(
-  formValues: OpenRouterFormValues
+  formValues: LlmFormValues
 ): Record<string, unknown> {
   const config: Record<string, unknown> = {};
+
+  // Base URL — optional, only persisted when set
+  if (formValues.baseUrl) {
+    const trimmed = formValues.baseUrl.trim();
+    if (trimmed) config.baseUrl = trimmed;
+  }
 
   // Required
   config.model = formValues.model || "openrouter/auto";
@@ -57,7 +67,7 @@ export function buildConfig(
     config.reasoning = true;
   }
 
-  // Transforms (comma-separated string → array)
+  // Transforms (comma-separated string → array; OpenRouter-only)
   if (formValues.transforms) {
     config.transforms = formValues.transforms
       .split(",")
@@ -65,12 +75,12 @@ export function buildConfig(
       .filter(Boolean);
   }
 
-  // Route
+  // Route (OpenRouter-only)
   if (formValues.route && ["fallback", "no-fallback"].includes(formValues.route)) {
     config.route = formValues.route;
   }
 
-  // Leaderboard attribution
+  // Leaderboard attribution (OpenRouter-only)
   if (formValues.httpReferer) config.httpReferer = formValues.httpReferer;
   if (formValues.xTitle) config.xTitle = formValues.xTitle;
 
@@ -83,12 +93,22 @@ export function buildConfig(
  */
 export const configFields = [
   {
+    key: "baseUrl",
+    label: "Base URL",
+    type: "text" as const,
+    placeholder: "https://openrouter.ai/api/v1",
+    required: false,
+    helpText:
+      "OpenAI-compatible endpoint. Leave empty for OpenRouter. Examples: NVIDIA NIM (https://integrate.api.nvidia.com/v1), Ollama (http://localhost:11434/v1).",
+  },
+  {
     key: "apiKey",
-    label: "OpenRouter API Key",
+    label: "API Key",
     type: "password" as const,
-    placeholder: "sk-or-v1-...",
-    required: true,
-    helpText: "Get your key at https://openrouter.ai/keys",
+    placeholder: "sk-or-v1-... / nvapi-... / sk-...",
+    required: false,
+    helpText:
+      "Provider API key. OpenRouter: https://openrouter.ai/keys. NVIDIA NIM: nvapi-... key. Ollama/vLLM localhost: leave empty.",
   },
   {
     key: "model",
@@ -97,7 +117,7 @@ export const configFields = [
     placeholder: "openrouter/auto",
     required: true,
     helpText:
-      'Select a model or use "openrouter/auto" for auto-routing. Models are loaded dynamically from OpenRouter.',
+      'Select a model or use "openrouter/auto" for OpenRouter auto-routing. Models are loaded dynamically from /models.',
     dynamic: true, // signals UI to fetch models from test() endpoint
   },
   {
@@ -141,7 +161,7 @@ export const configFields = [
   },
   {
     key: "route",
-    label: "Routing Strategy",
+    label: "Routing Strategy (OpenRouter only)",
     type: "select" as const,
     options: [
       { value: "fallback", label: "Fallback (auto-retry with other providers)" },

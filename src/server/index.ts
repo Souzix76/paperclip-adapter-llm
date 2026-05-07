@@ -24,8 +24,10 @@ import type {
   AdapterSkillSnapshot,
 } from "@paperclipai/adapter-utils";
 
-export { execute } from "./execute.js";
-export { testEnvironment, listOpenRouterModels } from "./test.js";
+import { execute } from "./execute.js";
+import { testEnvironment, listModels, listOpenRouterModels } from "./test.js";
+
+export { execute, testEnvironment, listModels, listOpenRouterModels };
 
 // ----- sessionCodec -----
 
@@ -67,11 +69,15 @@ export async function detectModel(): Promise<{
   provider: string;
   source: string;
 } | null> {
+  const fromLlm = process.env.LLM_MODEL;
+  if (fromLlm && fromLlm.trim().length > 0) {
+    return { model: fromLlm.trim(), provider: "llm", source: "env:LLM_MODEL" };
+  }
   const fromEnv = process.env.OPENROUTER_MODEL;
   if (fromEnv && fromEnv.trim().length > 0) {
-    return { model: fromEnv.trim(), provider: "openrouter", source: "env:OPENROUTER_MODEL" };
+    return { model: fromEnv.trim(), provider: "llm", source: "env:OPENROUTER_MODEL" };
   }
-  return { model: "openrouter/auto", provider: "openrouter", source: "default" };
+  return { model: "openrouter/auto", provider: "llm", source: "default" };
 }
 
 // ----- listSkills / syncSkills -----
@@ -86,13 +92,13 @@ export async function detectModel(): Promise<{
  */
 function defaultSkillsRoot(): string {
   const home = process.env.HOME || process.env.USERPROFILE || ".";
-  return path.join(home, ".openrouter-adapter", "skills");
+  return path.join(home, ".paperclip-llm-adapter", "skills");
 }
 
 export async function listSkills(_ctx: AdapterSkillContext): Promise<AdapterSkillSnapshot> {
   const root = process.env.PAPERCLIP_SKILLS_DIR?.trim() || defaultSkillsRoot();
   const snapshot: AdapterSkillSnapshot = {
-    adapterType: "openrouter",
+    adapterType: "llm",
     supported: true,
     mode: "ephemeral",
     desiredSkills: [],
@@ -141,4 +147,22 @@ export async function syncSkills(
   // v1: skills are managed externally (operator drops them in skillsRoot).
   // We just return the current listing — no copy/sync work.
   return listSkills(ctx);
+}
+
+// ----- createServerAdapter factory -----
+
+/**
+ * Paperclip plugin-loader convention: returns the full server-side adapter
+ * surface as a single object.
+ */
+export function createServerAdapter() {
+  return {
+    execute,
+    testEnvironment,
+    sessionCodec,
+    detectModel,
+    listSkills,
+    syncSkills,
+    listModels,
+  };
 }
