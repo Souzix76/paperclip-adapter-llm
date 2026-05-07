@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.1] - 2026-05-07
+
+### Fixed
+- Restore `createServerAdapter` re-export on the package main entry
+  (`src/index.ts` → `dist/index.js`). The 0.2.0 refactor regressed the
+  fix from commit `6fb8f95`, causing the Paperclip plugin loader to
+  reject the package at runtime with: *"Package does not export
+  createServerAdapter()"*. Empirically reproduced on Paperclip
+  v2026.428.0 (Contabo VPS). After this patch, server startup logs
+  `Loaded external adapters from plugin store {"count":1,"adapters":["llm"]}`.
+
 All notable changes to this project are documented here.
 
 ## 0.2.0 — 2026-05-07

@@ -221,3 +221,6 @@ export interface LlmConfig {
 
 /** @deprecated Use LlmConfig. */
 export type OpenRouterConfig = LlmConfig;
+
+// Re-export createServerAdapter so the Paperclip plugin loader can find it on the package main entry.
+export { createServerAdapter } from "./server/index.js";

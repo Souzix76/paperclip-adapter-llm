@@ -147,4 +147,6 @@ Use the \`provider/model-name\` format and an \`nvapi-...\` key.
 - You need a feature that requires native, non-OpenAI-compatible APIs (file
   upload, vision-only providers, etc.). Use a provider-specific adapter.
 `;
+// Re-export createServerAdapter so the Paperclip plugin loader can find it on the package main entry.
+export { createServerAdapter } from "./server/index.js";
 //# sourceMappingURL=index.js.map

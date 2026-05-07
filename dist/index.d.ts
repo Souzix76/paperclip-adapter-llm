@@ -79,4 +79,5 @@ export interface LlmConfig {
 }
 /** @deprecated Use LlmConfig. */
 export type OpenRouterConfig = LlmConfig;
+export { createServerAdapter } from "./server/index.js";
 //# sourceMappingURL=index.d.ts.map
