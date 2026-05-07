@@ -1,74 +1,168 @@
 // ─────────────────────────────────────────────────────────────────
-// @paperclipai/adapter-openrouter — Root Metadata (src/index.ts)
-// Shared across server · ui · cli — keep dependency-free
+// paperclip-adapter-llm — Root Metadata (src/index.ts)
+// Generic OpenAI-compatible adapter (OpenRouter is the default base URL).
+// Shared across server · ui · cli — keep dependency-free.
 // ─────────────────────────────────────────────────────────────────
 
-export const type = "openrouter" as const;
-export const label = "OpenRouter";
+export const type = "llm" as const;
+export const label = "LLM (OpenAI-compatible)";
 
 // ── Static fallback models (shown when API is unreachable) ──────
 export const models = [
-  // Free tier
-  { id: "openrouter/auto",                       label: "Auto (best free route)" },
-  { id: "meta-llama/llama-4-maverick:free",       label: "Llama 4 Maverick (free)" },
-  { id: "meta-llama/llama-4-scout:free",          label: "Llama 4 Scout (free)" },
-  { id: "google/gemma-3-27b-it:free",             label: "Gemma 3 27B (free)" },
-  { id: "deepseek/deepseek-chat-v3-0324:free",    label: "DeepSeek V3 0324 (free)" },
-  { id: "qwen/qwen3-235b-a22b:free",              label: "Qwen3 235B (free)" },
-  { id: "mistralai/mistral-small-3.2-24b-instruct:free", label: "Mistral Small 3.2 (free)" },
+  // OpenRouter — free tier
+  { id: "openrouter/auto",                       label: "Auto (best free route, OpenRouter)" },
+  { id: "meta-llama/llama-4-maverick:free",       label: "Llama 4 Maverick (free, OpenRouter)" },
+  { id: "meta-llama/llama-4-scout:free",          label: "Llama 4 Scout (free, OpenRouter)" },
+  { id: "google/gemma-3-27b-it:free",             label: "Gemma 3 27B (free, OpenRouter)" },
+  { id: "deepseek/deepseek-chat-v3-0324:free",    label: "DeepSeek V3 0324 (free, OpenRouter)" },
+  { id: "qwen/qwen3-235b-a22b:free",              label: "Qwen3 235B (free, OpenRouter)" },
+  { id: "mistralai/mistral-small-3.2-24b-instruct:free", label: "Mistral Small 3.2 (free, OpenRouter)" },
 
-  // Paid — frontier
-  { id: "anthropic/claude-sonnet-4-6",            label: "Claude Sonnet 4.6" },
-  { id: "anthropic/claude-opus-4-6",              label: "Claude Opus 4.6" },
-  { id: "openai/gpt-4.1",                        label: "GPT-4.1" },
-  { id: "openai/o4-mini",                         label: "o4-mini" },
-  { id: "google/gemini-2.5-pro-preview",          label: "Gemini 2.5 Pro" },
-  { id: "google/gemini-2.5-flash-preview",        label: "Gemini 2.5 Flash" },
-  { id: "deepseek/deepseek-r1",                   label: "DeepSeek R1" },
-  { id: "meta-llama/llama-4-maverick",            label: "Llama 4 Maverick" },
+  // OpenRouter — paid frontier
+  { id: "anthropic/claude-sonnet-4-6",            label: "Claude Sonnet 4.6 (OpenRouter)" },
+  { id: "anthropic/claude-opus-4-6",              label: "Claude Opus 4.6 (OpenRouter)" },
+  { id: "openai/gpt-4.1",                         label: "GPT-4.1 (OpenRouter)" },
+  { id: "openai/o4-mini",                         label: "o4-mini (OpenRouter)" },
+  { id: "google/gemini-2.5-pro-preview",          label: "Gemini 2.5 Pro (OpenRouter)" },
+  { id: "google/gemini-2.5-flash-preview",        label: "Gemini 2.5 Flash (OpenRouter)" },
+  { id: "deepseek/deepseek-r1",                   label: "DeepSeek R1 (OpenRouter)" },
+  { id: "meta-llama/llama-4-maverick",            label: "Llama 4 Maverick (OpenRouter)" },
 
-  // Paid — mid-tier
-  { id: "anthropic/claude-haiku-4-5",             label: "Claude Haiku 4.5" },
-  { id: "openai/gpt-4.1-mini",                   label: "GPT-4.1 Mini" },
-  { id: "mistralai/mistral-medium-3",             label: "Mistral Medium 3" },
-  { id: "qwen/qwen3-235b-a22b",                  label: "Qwen3 235B" },
+  // OpenRouter — paid mid-tier
+  { id: "anthropic/claude-haiku-4-5",             label: "Claude Haiku 4.5 (OpenRouter)" },
+  { id: "openai/gpt-4.1-mini",                    label: "GPT-4.1 Mini (OpenRouter)" },
+  { id: "mistralai/mistral-medium-3",             label: "Mistral Medium 3 (OpenRouter)" },
+  { id: "qwen/qwen3-235b-a22b",                   label: "Qwen3 235B (OpenRouter)" },
+
+  // NVIDIA NIM (set baseUrl: https://integrate.api.nvidia.com/v1)
+  { id: "moonshotai/kimi-k2.6",                          label: "Kimi K2.6 (NIM)" },
+  { id: "deepseek-ai/deepseek-v4-pro",                   label: "DeepSeek V4 Pro (NIM)" },
+  { id: "qwen/qwen3-coder-480b-a35b-instruct",           label: "Qwen3 Coder 480B (NIM)" },
+  { id: "nvidia/nemotron-3-super-120b-a12b",             label: "Nemotron 3 Super 120B (NIM)" },
 ];
 
-// ── OpenRouter API constants ────────────────────────────────────
-export const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
-export const OPENROUTER_MODELS_ENDPOINT = `${OPENROUTER_BASE_URL}/models`;
-export const OPENROUTER_CHAT_ENDPOINT = `${OPENROUTER_BASE_URL}/chat/completions`;
-export const OPENROUTER_GENERATION_ENDPOINT = `${OPENROUTER_BASE_URL}/generation`;
+// ── Endpoint resolution ─────────────────────────────────────────
+export const DEFAULT_BASE_URL = "https://openrouter.ai/api/v1";
+
+export interface ResolvedEndpoints {
+  base: string;
+  models: string;
+  chat: string;
+  /** OpenRouter-specific cost endpoint; gracefully 404s on other providers. */
+  generation: string;
+}
+
+export function resolveEndpoints(baseUrl?: string): ResolvedEndpoints {
+  const base = (baseUrl || DEFAULT_BASE_URL).replace(/\/+$/, "");
+  return {
+    base,
+    models: `${base}/models`,
+    chat: `${base}/chat/completions`,
+    generation: `${base}/generation`,
+  };
+}
+
+/** True when the resolved base URL is OpenRouter (or unset). */
+export function isOpenRouter(baseUrl?: string): boolean {
+  const b = (baseUrl || DEFAULT_BASE_URL).replace(/\/+$/, "");
+  return b === DEFAULT_BASE_URL;
+}
+
+/** True when the base URL points at a localhost host (Ollama / vLLM). */
+export function isLocalEndpoint(baseUrl?: string): boolean {
+  if (!baseUrl) return false;
+  try {
+    const url = new URL(baseUrl);
+    return ["localhost", "127.0.0.1", "0.0.0.0", "::1"].includes(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+// ── Deprecated re-exports (backwards compat) ────────────────────
+/** @deprecated Use resolveEndpoints() */
+export const OPENROUTER_BASE_URL = DEFAULT_BASE_URL;
+/** @deprecated Use resolveEndpoints(baseUrl).models */
+export const OPENROUTER_MODELS_ENDPOINT = `${DEFAULT_BASE_URL}/models`;
+/** @deprecated Use resolveEndpoints(baseUrl).chat */
+export const OPENROUTER_CHAT_ENDPOINT = `${DEFAULT_BASE_URL}/chat/completions`;
+/** @deprecated Use resolveEndpoints(baseUrl).generation */
+export const OPENROUTER_GENERATION_ENDPOINT = `${DEFAULT_BASE_URL}/generation`;
 
 // ── Adapter documentation ───────────────────────────────────────
-export const agentConfigurationDoc = `# openrouter adapter configuration
+export const agentConfigurationDoc = `# llm adapter configuration
 
 ## Use when
-- You want access to 300+ models (free AND paid) from a single API key
-- You want to use OpenRouter's auto-routing for cost-optimized inference
-- You need models not available via native adapters (Llama, Qwen, Mistral, DeepSeek, etc.)
-- You want to compare outputs across multiple providers without separate API keys
+- You want a single Paperclip adapter that can talk to any OpenAI-compatible endpoint.
+- You're using OpenRouter (default), NVIDIA NIM, Ollama, vLLM, DeepSeek direct, or any
+  other provider that speaks the OpenAI \`/chat/completions\` schema.
 
 ## Core fields
-- \`model\` (string) — OpenRouter model ID, e.g. "anthropic/claude-sonnet-4-6"
-  Use "openrouter/auto" to let OpenRouter pick the best model automatically.
-  Append ":free" to any model ID for free-tier routing.
-- \`apiKey\` (string) — Your OpenRouter API key (sk-or-v1-...)
-  Can also be set via OPENROUTER_API_KEY env var.
+- \`baseUrl\` (string, optional) — OpenAI-compatible base URL. Default: OpenRouter.
+- \`model\` (string) — Model ID. Format depends on the provider.
+- \`apiKey\` (string) — Provider API key. Optional for unauthenticated localhost
+  endpoints (Ollama, vLLM). Can also be set via \`LLM_API_KEY\` (or
+  \`OPENROUTER_API_KEY\` for backwards compat).
 - \`systemPrompt\` (string, optional) — System prompt prepended to all messages.
-- \`temperature\` (number, optional) — Sampling temperature (0-2). Default: 0.7
+- \`temperature\` (number, optional) — 0–2. Default: 0.7
 - \`maxTokens\` (number, optional) — Max completion tokens. Default: 4096
 - \`topP\` (number, optional) — Nucleus sampling. Default: 1
-- \`stream\` (boolean, optional) — Enable SSE streaming. Default: true
-- \`reasoning\` (boolean, optional) — Enable extended thinking for supported models.
-- \`transforms\` (string[], optional) — OpenRouter transforms, e.g. ["middle-out"]
-- \`route\` (string, optional) — "fallback" (default) or "no-fallback"
-- \`httpReferer\` (string, optional) — Your app URL for OpenRouter leaderboards
-- \`xTitle\` (string, optional) — Your app name for OpenRouter leaderboards
+- \`stream\` (boolean, optional) — SSE streaming. Default: true
+- \`reasoning\` (boolean, optional) — Extended thinking for supported models.
+
+OpenRouter-specific fields (ignored by other providers):
+- \`transforms\` (string[]) — e.g. ["middle-out"]
+- \`route\` ("fallback" | "no-fallback")
+- \`httpReferer\`, \`xTitle\` — leaderboard attribution
+
+## Provider examples
+
+### OpenRouter (default)
+\`\`\`json
+{
+  "model": "anthropic/claude-sonnet-4-6",
+  "apiKey": "sk-or-v1-..."
+}
+\`\`\`
+
+### NVIDIA NIM
+Use the \`provider/model-name\` format and an \`nvapi-...\` key.
+\`\`\`json
+{
+  "baseUrl": "https://integrate.api.nvidia.com/v1",
+  "model": "moonshotai/kimi-k2.6",
+  "apiKey": "nvapi-..."
+}
+\`\`\`
+
+### Ollama (local)
+\`\`\`json
+{
+  "baseUrl": "http://localhost:11434/v1",
+  "model": "llama3.1"
+}
+\`\`\`
+
+### vLLM (self-hosted)
+\`\`\`json
+{
+  "baseUrl": "http://your-vllm-host:8000/v1",
+  "model": "meta-llama/Llama-3.1-70B-Instruct"
+}
+\`\`\`
+
+### DeepSeek (direct API)
+\`\`\`json
+{
+  "baseUrl": "https://api.deepseek.com/v1",
+  "model": "deepseek-chat",
+  "apiKey": "sk-..."
+}
+\`\`\`
 
 ## Don't use when
-- You already have a direct API key for a single provider and only need that one model
-- You need local/offline inference (use ollama or process adapter instead)
+- You need a feature that requires native, non-OpenAI-compatible APIs (file
+  upload, vision-only providers, etc.). Use a provider-specific adapter.
 `;
 
 // ── Types ───────────────────────────────────────────────────────
@@ -94,7 +188,9 @@ export interface OpenRouterModel {
   };
 }
 
-export interface OpenRouterConfig {
+export interface LlmConfig {
+  /** OpenAI-compatible base URL. Defaults to OpenRouter. */
+  baseUrl?: string;
   model: string;
   apiKey?: string;
   systemPrompt?: string;
@@ -103,18 +199,25 @@ export interface OpenRouterConfig {
   topP?: number;
   stream?: boolean;
   reasoning?: boolean;
+  /** OpenRouter-specific. */
   transforms?: string[];
+  /** OpenRouter-specific. */
   route?: "fallback" | "no-fallback";
+  /** OpenRouter-specific. */
   httpReferer?: string;
+  /** OpenRouter-specific. */
   xTitle?: string;
   /** Max tool-loop turns per run. Default 25. */
   maxTurns?: number;
   /** Skip approval gates for hire_agent and similar mutating tools. Default false. */
   autoApprove?: boolean;
-  /** Override path to skills directory. Defaults to ~/.openrouter-adapter/skills. */
+  /** Override path to skills directory. Defaults to ~/.paperclip-llm-adapter/skills. */
   skillsDir?: string;
   /** Absolute path to a markdown file that will be read at runtime and
    * prepended to the system prompt. Takes precedence over systemPrompt
    * if both are set. */
   instructionsFilePath?: string;
 }
+
+/** @deprecated Use LlmConfig. */
+export type OpenRouterConfig = LlmConfig;

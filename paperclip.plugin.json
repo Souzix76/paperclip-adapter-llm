@@ -1,20 +1,25 @@
 {
   "$schema": "https://paperclipai.com/schemas/plugin-manifest.json",
   "type": "adapter",
-  "id": "openrouter-talha",
-  "name": "OpenRouter Adapter",
-  "description": "Use any OpenRouter model (300+ models) with Paperclip",
-  "version": "1.0.0",
+  "id": "llm",
+  "name": "LLM Adapter (OpenAI-compatible)",
+  "description": "Generic OpenAI-compatible adapter — works with OpenRouter, NVIDIA NIM, Ollama, vLLM, DeepSeek, and any OpenAI-compatible endpoint",
+  "version": "0.1.0",
   "entry": {
     "adapter": "./src/index.ts"
   },
   "configSchema": {
     "type": "object",
     "properties": {
+      "baseUrl": {
+        "type": "string",
+        "description": "OpenAI-compatible base URL. Leave empty for OpenRouter (default).",
+        "default": ""
+      },
       "model": {
         "type": "string",
-        "description": "OpenRouter model ID (e.g., z-ai/glm-4-32b)",
-        "default": "anthropic/claude-3.5-sonnet"
+        "description": "Model ID. Format depends on provider (e.g. anthropic/claude-sonnet-4-6 on OpenRouter, moonshotai/kimi-k2.6 on NVIDIA NIM).",
+        "default": "openrouter/auto"
       },
       "maxTokens": {
         "type": "number",

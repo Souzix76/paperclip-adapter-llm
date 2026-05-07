@@ -23,8 +23,9 @@ import {
 } from "@paperclipai/adapter-utils/server-utils";
 
 import {
-  OPENROUTER_GENERATION_ENDPOINT,
-  type OpenRouterConfig,
+  DEFAULT_BASE_URL,
+  resolveEndpoints,
+  type LlmConfig,
 } from "../index.js";
 import { PaperclipApi, PaperclipApiError } from "./paperclip-api.js";
 import { loadSkills, renderSkillsForPrompt } from "./skills.js";
@@ -43,9 +44,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CLI_PATH = path.resolve(__dirname, "../../cli/dist/index.js");
 
 export async function execute(
-  ctx: AdapterExecutionContext<OpenRouterConfig>
+  ctx: AdapterExecutionContext<LlmConfig>
 ): Promise<AdapterExecutionResult> {
   const { wake, issueId, config, onLog, authToken } = ctx;
+
+  const endpoints = resolveEndpoints(config.baseUrl);
+  if (config.baseUrl && endpoints.base !== DEFAULT_BASE_URL) {
+    emitSystem(onLog, `Using LLM endpoint: ${endpoints.base}`);
+  }
 
   const api = new PaperclipApi(ctx);
 
@@ -89,10 +95,14 @@ export async function execute(
     "--output-format", "stream-json",
     "--model", config.model || "anthropic/claude-3.5-sonnet",
     "--max-tokens", String(config.maxTokens || 4096),
+    "--base-url", endpoints.base,
   ];
 
   const env = {
     ...process.env,
+    LLM_API_KEY: authToken,
+    LLM_BASE_URL: endpoints.base,
+    // Backwards-compat alias for existing OpenRouter installs.
     OPENROUTER_API_KEY: authToken,
   };
 
@@ -184,17 +194,14 @@ export async function execute(
   await Promise.all([stdoutPromise, stderrPromise]);
 
   // ----------------------------------------------------------------------
-  // 5. Fetch usage from OpenRouter generation endpoint
+  // 5. Fetch usage from /generation (OpenRouter-specific; silently 404s elsewhere)
   // ----------------------------------------------------------------------
   try {
-    // The CLI doesn't report usage, so we query the generation endpoint
-    // This is best-effort; if it fails we still have a successful run.
-    const genRes = await fetch(OPENROUTER_GENERATION_ENDPOINT, {
+    const genRes = await fetch(endpoints.generation, {
       headers: { Authorization: `Bearer ${authToken}` },
     });
     if (genRes.ok) {
       const genData = await genRes.json() as any;
-      // Find the most recent generation for this model
       const latest = genData.data?.[0];
       if (latest) {
         usage.inputTokens = latest.usage?.prompt_tokens || 0;
@@ -203,8 +210,10 @@ export async function execute(
         usage.costUsd = latest.total_cost || 0;
       }
     }
+    // Non-OpenRouter providers will 404 here; usage stays at zero.
+    // TODO: parse `usage` field from CLI stream-json events for cross-provider cost.
   } catch {
-    // Ignore usage fetch errors
+    // Ignore — non-OpenRouter providers don't expose /generation.
   }
 
   // ----------------------------------------------------------------------

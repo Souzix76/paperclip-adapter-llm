@@ -9,6 +9,8 @@ export interface AgentOptions {
   maxTokens: number;
   apiKey: string;
   outputFormat: 'stream-json' | 'text';
+  /** OpenAI-compatible base URL. Defaults to OpenRouter when omitted. */
+  baseUrl?: string;
 }
 
 export async function runAgent(options: AgentOptions) {
@@ -33,7 +35,7 @@ export async function runAgent(options: AgentOptions) {
     let toolCalls: ToolCallPart[] = [];
 
     for await (const chunk of streamResponse(
-      { apiKey: options.apiKey, model: options.model, maxTokens: options.maxTokens },
+      { apiKey: options.apiKey, model: options.model, maxTokens: options.maxTokens, baseUrl: options.baseUrl },
       messages,
       toolDefinitions
     )) {

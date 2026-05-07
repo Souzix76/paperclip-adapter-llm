@@ -6,6 +6,8 @@ export interface OpenRouterConfig {
   apiKey: string;
   model: string;
   maxTokens?: number;
+  /** OpenAI-compatible base URL. Defaults to OpenRouter when omitted. */
+  baseUrl?: string;
 }
 
 export async function* streamResponse(
@@ -13,7 +15,10 @@ export async function* streamResponse(
   messages: CoreMessage[],
   tools: Record<string, any>
 ) {
-  const openrouter = createOpenRouter({ apiKey: config.apiKey });
+  const openrouter = createOpenRouter({
+    apiKey: config.apiKey,
+    ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
+  });
 
   const result = await streamText({
     model: openrouter(config.model),

@@ -1,8 +1,9 @@
 {
-  "name": "@paperclipai/openrouter-cli",
-  "version": "1.0.0",
+  "name": "@paperclipai/llm-cli",
+  "version": "0.1.0",
   "type": "module",
   "bin": {
+    "llm-cli": "./dist/index.js",
     "openrouter-cli": "./dist/index.js"
   },
   "scripts": {
